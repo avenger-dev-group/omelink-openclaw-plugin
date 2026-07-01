@@ -13,13 +13,13 @@
         "additionalProperties": false,
         "properties": {
           "baseUrl": {
-            "type": "string"
+            "type": "string",
+            "default": "http://127.0.0.1"
           },
           "apiKey": {
             "type": "string"
           }
-        },
-        "required": ["baseUrl"]
+        }
       },
       "uiHints": {
         "baseUrl": {

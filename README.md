@@ -57,7 +57,9 @@ URL placeholders used below:
 - `<OMELINK_API_URL>`: OMELINK API base URL, for example `https://api.omelink.example.com`.
 
 Configure the channel in OpenClaw config. The plugin reads only
-`channels.omelink`; it does not read `OMELINK_*` environment variables.
+`channels.omelink`; it does not read `OMELINK_*` environment variables. If
+`channels.omelink.baseUrl` is omitted or blank, the plugin uses
+`http://127.0.0.1`.
 
 ```json
 {
@@ -71,14 +73,14 @@ Configure the channel in OpenClaw config. The plugin reads only
 ```
 
 `channels.omelink.baseUrl` is the OMELINK API base URL, for example
-`https://api.omelink.example.com`. Do not include
+`https://api.omelink.example.com`. It defaults to `http://127.0.0.1`. Do not include
 `/api/external/openClaw/channel/messages`; the plugin appends that path.
 
 `channels.omelink.apiKey` is optional. When set, OpenClaw sends it to OMELINK
 as `x-api-key` on outbound `/messages` requests.
 
-`channels.omelink.baseUrl` is required. If it is omitted, the plugin reports a
-configuration error instead of falling back to a local URL.
+`channels.omelink.baseUrl` is optional. If it is omitted or blank, the plugin
+falls back to `http://127.0.0.1`.
 
 Inbound plugin routes use OpenClaw Gateway authentication. Send the Gateway
 token as `Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>`.

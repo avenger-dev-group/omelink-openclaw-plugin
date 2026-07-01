@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import { resolveOmelinkConfig } from "../src/config.js";
+import { DEFAULT_OMELINK_BASE_URL } from "../src/types.js";
 
 describe("resolveOmelinkConfig", () => {
   const originalEnv = { ...process.env };
@@ -27,22 +28,39 @@ describe("resolveOmelinkConfig", () => {
     });
   });
 
-  it("requires channels.omelink.baseUrl and ignores OMELINK environment variables", () => {
+  it("uses the default baseUrl and ignores OMELINK environment variables", () => {
     process.env.OMELINK_BASE_URL = "http://env.example.test";
     process.env.OMELINK_WEBHOOK_PATH = "/env/inbound";
 
-    expect(() =>
+    expect(
       resolveOmelinkConfig({
         channels: {
           "omelink": {}
         }
       })
-    ).toThrow("channels.omelink.baseUrl is required");
+    ).toMatchObject({
+      baseUrl: DEFAULT_OMELINK_BASE_URL,
+      apiKey: undefined
+    });
   });
 
-  it("requires channels.omelink.baseUrl when channels.omelink is not configured", () => {
-    expect(() => resolveOmelinkConfig({})).toThrow(
-      "channels.omelink.baseUrl is required"
-    );
+  it("uses the default baseUrl when channels.omelink is not configured", () => {
+    expect(resolveOmelinkConfig({})).toMatchObject({
+      baseUrl: DEFAULT_OMELINK_BASE_URL
+    });
+  });
+
+  it("uses the default baseUrl when channels.omelink.baseUrl is blank", () => {
+    expect(
+      resolveOmelinkConfig({
+        channels: {
+          "omelink": {
+            baseUrl: "   "
+          }
+        }
+      })
+    ).toMatchObject({
+      baseUrl: DEFAULT_OMELINK_BASE_URL
+    });
   });
 });

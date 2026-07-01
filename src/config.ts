@@ -1,4 +1,5 @@
 import {
+  DEFAULT_OMELINK_BASE_URL,
   DEFAULT_OMELINK_AGENTS_PATH,
   DEFAULT_OMELINK_WEBHOOK_PATH,
   OMELINK_CHANNEL_ID,
@@ -24,11 +25,7 @@ function readChannelConfig(cfg: unknown): OmelinkChannelConfig {
 
 export function resolveOmelinkConfig(cfg: unknown = {}): OmelinkConfig {
   const channelCfg = readChannelConfig(cfg);
-  const baseUrl = readString(channelCfg.baseUrl);
-
-  if (!baseUrl) {
-    throw new Error("channels.omelink.baseUrl is required");
-  }
+  const baseUrl = readString(channelCfg.baseUrl) ?? DEFAULT_OMELINK_BASE_URL;
 
   return {
     baseUrl,

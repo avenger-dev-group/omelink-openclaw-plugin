@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { DEFAULT_OMELINK_BASE_URL } from "../src/types.js";
+
 describe("openclaw.plugin.json", () => {
   it("declares OMELINK channel config metadata for cold OpenClaw discovery", () => {
     const manifest = JSON.parse(
@@ -22,10 +24,10 @@ describe("openclaw.plugin.json", () => {
       schema: {
         type: "object",
         additionalProperties: false,
-        required: ["baseUrl"],
         properties: {
           baseUrl: {
-            type: "string"
+            type: "string",
+            default: DEFAULT_OMELINK_BASE_URL
           },
           apiKey: {
             type: "string"
