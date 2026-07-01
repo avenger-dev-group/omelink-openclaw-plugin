@@ -1,0 +1,41 @@
+{
+  "id": "omelink",
+  "activation": {
+    "onStartup": false
+  },
+  "channels": ["omelink"],
+  "channelConfigs": {
+    "omelink": {
+      "label": "OMELINK",
+      "description": "Text-only OMELINK channel integration.",
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "baseUrl": {
+            "type": "string"
+          },
+          "apiKey": {
+            "type": "string"
+          }
+        },
+        "required": ["baseUrl"]
+      },
+      "uiHints": {
+        "baseUrl": {
+          "label": "OMELINK base URL",
+          "placeholder": "<OMELINK_API_URL>"
+        },
+        "apiKey": {
+          "label": "OMELINK API key",
+          "sensitive": true
+        }
+      }
+    }
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

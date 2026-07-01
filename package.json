@@ -1,0 +1,41 @@
+{
+  "name": "omelink-openclaw-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "OpenClaw plugin for OMELINK.",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./channel-plugin-api": "./dist/channel-plugin-api.js"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "npm run build && npm test"
+  },
+  "keywords": [
+    "openclaw",
+    "channel",
+    "omelink"
+  ],
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@types/node": "^20.19.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "openclaw": "*"
+  },
+  "peerDependenciesMeta": {
+    "openclaw": {
+      "optional": true
+    }
+  }
+}
