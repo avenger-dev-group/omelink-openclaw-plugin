@@ -57,9 +57,10 @@ URL placeholders used below:
 - `<OMELINK_API_URL>`: OMELINK API base URL, for example `https://api.omelink.example.com`.
 
 Configure the channel in OpenClaw config. The plugin reads only
-`channels.omelink`; it does not read `OMELINK_*` environment variables. If
-`channels.omelink.baseUrl` is omitted or blank, the plugin uses
-`http://127.0.0.1`.
+`channels.omelink`; it does not read `OMELINK_*` environment variables. The
+OpenClaw config UI may leave `channels.omelink.baseUrl` blank; when it is
+omitted or blank, the plugin still starts and uses `http://127.0.0.1` at
+runtime.
 
 ```json
 {
@@ -73,7 +74,8 @@ Configure the channel in OpenClaw config. The plugin reads only
 ```
 
 `channels.omelink.baseUrl` is the OMELINK API base URL, for example
-`https://api.omelink.example.com`. It defaults to `http://127.0.0.1`. Do not include
+`https://api.omelink.example.com`. Leave it blank to use the runtime fallback
+`http://127.0.0.1`. Do not include
 `/api/external/openClaw/channel/messages`; the plugin appends that path.
 
 `channels.omelink.apiKey` is optional. When set, OpenClaw sends it to OMELINK
