@@ -11,6 +11,17 @@ The first version supports single-user direct conversations only. It does not us
 
 ## Install / Enable
 
+Install from GitHub:
+
+```bash
+openclaw plugins install git:avenger-dev-group/omelink-openclaw-plugin
+```
+
+The `git:` prefix is required by OpenClaw's plugin installer. Bare
+`https://github.com/...` URLs are rejected as unsupported npm specs.
+
+Or install from a local checkout:
+
 Build the plugin:
 
 ```bash
@@ -19,6 +30,12 @@ npm run build
 ```
 
 Register this plugin directory in OpenClaw, then restart the gateway:
+
+```bash
+openclaw plugins install /path/to/omelink-openclaw-plugin --link
+```
+
+Restart the gateway:
 
 ```bash
 openclaw gateway restart
