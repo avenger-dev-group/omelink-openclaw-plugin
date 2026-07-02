@@ -194,6 +194,26 @@ describe("omelink channel inbound gateway", () => {
     );
   });
 
+  it("registers gateway routes when the OMELINK channel config is absent", async () => {
+    const { omelinkPlugin } = await import("../src/channel.js");
+
+    await omelinkPlugin.base.gateway.startAccount({
+      cfg: {},
+      accountId: "default",
+      abortSignal: new AbortController().signal
+    });
+
+    expect(routeHandlers.get("/api/external/openClaw/channel/inbound")?.auth).toBe(
+      "gateway"
+    );
+    expect(routeHandlers.get("/api/external/openClaw/channel/agents")?.auth).toBe(
+      "gateway"
+    );
+    expect(routeHandlers.get("/api/external/openClaw/channel/config")?.auth).toBe(
+      "gateway"
+    );
+  });
+
   it("posts OpenClaw replies directly to the OMELINK messages API", async () => {
     const { omelinkPlugin } = await import("../src/channel.js");
     const { setOmelinkRuntime } = await import("../src/runtime.js");

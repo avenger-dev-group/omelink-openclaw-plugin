@@ -49,6 +49,10 @@ openclaw plugins inspect omelink --runtime --json
 
 The plugin should report `status: "loaded"`.
 
+The plugin loads on OpenClaw gateway startup. It does not require
+`channels.omelink.baseUrl` to be present before the inbound, agent, and config
+routes are registered.
+
 ## Configuration
 
 URL placeholders used below:
@@ -56,11 +60,11 @@ URL placeholders used below:
 - `<OPENCLAW_GATEWAY_URL>`: OpenClaw Gateway base URL, for example `https://openclaw.example.com`.
 - `<OMELINK_API_URL>`: OMELINK API base URL, for example `https://api.omelink.example.com`.
 
-Configure the channel in OpenClaw config. The plugin reads only
-`channels.omelink`; it does not read `OMELINK_*` environment variables. The
-OpenClaw config UI may leave `channels.omelink.baseUrl` blank; when it is
-omitted or blank, the plugin still starts and uses `http://127.0.0.1` at
-runtime.
+Optionally configure the channel in OpenClaw config. The plugin reads only
+`channels.omelink`; it does not read `OMELINK_*` environment variables.
+OpenClaw may start the plugin with no `channels.omelink` entry at all; when
+`channels.omelink.baseUrl` is omitted or blank, the plugin still starts and
+uses `http://127.0.0.1` at runtime.
 
 ```json
 {

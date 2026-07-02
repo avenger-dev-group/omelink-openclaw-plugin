@@ -7,8 +7,11 @@ describe("openclaw.plugin.json", () => {
     const manifest = JSON.parse(
       fs.readFileSync(path.resolve("openclaw.plugin.json"), "utf8")
     ) as {
+      activation?: { onStartup?: boolean };
       channelConfigs?: Record<string, { schema?: unknown; label?: string }>;
     };
+
+    expect(manifest.activation?.onStartup).toBe(true);
 
     const channelConfig = manifest.channelConfigs?.["omelink"] as {
       schema?: {
