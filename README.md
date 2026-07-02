@@ -91,6 +91,25 @@ falls back to `http://127.0.0.1`.
 Inbound plugin routes use OpenClaw Gateway authentication. Send the Gateway
 token as `Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>`.
 
+## Check Plugin Installation
+
+OMELINK can verify that the plugin is installed and its gateway routes are
+available by calling the heartbeat endpoint:
+
+```bash
+curl --location --request GET '<OPENCLAW_GATEWAY_URL>/api/external/openClaw/channel/heartbeat' \
+  --header 'Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>'
+```
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "plugin": "omelink"
+}
+```
+
 ## Set OMELINK API Config
 
 Update `channels.omelink.baseUrl` and `channels.omelink.apiKey` through the

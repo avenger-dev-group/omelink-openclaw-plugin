@@ -172,9 +172,11 @@ describe("omelink channel inbound gateway", () => {
 
     expect(routeHandlers.has("/api/external/openClaw/channel/agents")).toBe(true);
     expect(routeHandlers.has("/api/external/openClaw/channel/config")).toBe(true);
+    expect(routeHandlers.has("/api/external/openClaw/channel/heartbeat")).toBe(true);
     expect(routeHandlers.get("/api/external/openClaw/channel/inbound")?.auth).toBe("gateway");
     expect(routeHandlers.get("/api/external/openClaw/channel/agents")?.auth).toBe("gateway");
     expect(routeHandlers.get("/api/external/openClaw/channel/config")?.auth).toBe("gateway");
+    expect(routeHandlers.get("/api/external/openClaw/channel/heartbeat")?.auth).toBe("gateway");
 
     const response = await postWebhook("/api/external/openClaw/channel/inbound", {
       omelink_conversation_id: "local-channel-xxx",
@@ -210,6 +212,9 @@ describe("omelink channel inbound gateway", () => {
       "gateway"
     );
     expect(routeHandlers.get("/api/external/openClaw/channel/config")?.auth).toBe(
+      "gateway"
+    );
+    expect(routeHandlers.get("/api/external/openClaw/channel/heartbeat")?.auth).toBe(
       "gateway"
     );
   });

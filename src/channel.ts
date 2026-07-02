@@ -12,6 +12,7 @@ import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
 import { createOmelinkAgentAdminHandler } from "./agent-admin.js";
 import { sendOmelinkTextMessage } from "./client.js";
 import { createOmelinkConfigHandler } from "./config-endpoint.js";
+import { createOmelinkHeartbeatHandler } from "./heartbeat.js";
 import {
   listOmelinkAccountIds,
   resolveOmelinkAccount,
@@ -22,6 +23,7 @@ import { getOmelinkRuntime } from "./runtime.js";
 import {
   OMELINK_CHANNEL_ID,
   OMELINK_CONFIG_PATH,
+  OMELINK_HEARTBEAT_PATH,
   type OmelinkInboundMessage,
   type OmelinkConfig
 } from "./types.js";
@@ -303,6 +305,22 @@ function registerOmelinkConfigRoute(params: {
   });
 }
 
+function registerOmelinkHeartbeatRoute(params: {
+  accountId: string;
+  log?: GatewayLog;
+}): () => void {
+  const handler = createOmelinkHeartbeatHandler();
+
+  return registerPluginHttpRoute({
+    path: OMELINK_HEARTBEAT_PATH,
+    auth: "gateway",
+    pluginId: OMELINK_CHANNEL_ID,
+    accountId: params.accountId,
+    log: (message: string) => params.log?.info?.(message),
+    handler
+  });
+}
+
 export const omelinkPlugin = createChatChannelPlugin({
   base: {
     id: OMELINK_CHANNEL_ID,
@@ -397,11 +415,16 @@ export const omelinkPlugin = createChatChannelPlugin({
           accountId,
           log: ctx.log
         });
+        const unregisterHeartbeat = registerOmelinkHeartbeatRoute({
+          accountId,
+          log: ctx.log
+        });
         return waitUntilAbort(ctx.abortSignal, () => {
           ctx.log?.info?.(`Stopping OMELINK channel (account: ${accountId})`);
           unregisterWebhook();
           unregisterAgentAdmin();
           unregisterConfig();
+          unregisterHeartbeat();
         });
       },
       stopAccount: async (ctx: GatewayContext) => {

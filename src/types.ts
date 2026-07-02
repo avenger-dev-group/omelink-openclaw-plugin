@@ -6,6 +6,8 @@ export const DEFAULT_OMELINK_AGENTS_PATH =
   "/api/external/openClaw/channel/agents";
 export const OMELINK_CONFIG_PATH =
   "/api/external/openClaw/channel/config";
+export const OMELINK_HEARTBEAT_PATH =
+  "/api/external/openClaw/channel/heartbeat";
 export const OMELINK_MESSAGES_PATH =
   "/api/external/openClaw/channel/messages";
 

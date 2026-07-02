@@ -3,6 +3,7 @@ export declare const DEFAULT_OMELINK_BASE_URL = "http://127.0.0.1";
 export declare const DEFAULT_OMELINK_WEBHOOK_PATH = "/api/external/openClaw/channel/inbound";
 export declare const DEFAULT_OMELINK_AGENTS_PATH = "/api/external/openClaw/channel/agents";
 export declare const OMELINK_CONFIG_PATH = "/api/external/openClaw/channel/config";
+export declare const OMELINK_HEARTBEAT_PATH = "/api/external/openClaw/channel/heartbeat";
 export declare const OMELINK_MESSAGES_PATH = "/api/external/openClaw/channel/messages";
 export interface OmelinkConfig {
     baseUrl: string;

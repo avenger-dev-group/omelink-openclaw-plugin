@@ -7,10 +7,11 @@ import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
 import { createOmelinkAgentAdminHandler } from "./agent-admin.js";
 import { sendOmelinkTextMessage } from "./client.js";
 import { createOmelinkConfigHandler } from "./config-endpoint.js";
+import { createOmelinkHeartbeatHandler } from "./heartbeat.js";
 import { listOmelinkAccountIds, resolveOmelinkAccount } from "./channel-config.js";
 import { resolveOmelinkConfig } from "./config.js";
 import { getOmelinkRuntime } from "./runtime.js";
-import { OMELINK_CHANNEL_ID, OMELINK_CONFIG_PATH } from "./types.js";
+import { OMELINK_CHANNEL_ID, OMELINK_CONFIG_PATH, OMELINK_HEARTBEAT_PATH } from "./types.js";
 import { createOmelinkWebhookHandler } from "./webhook.js";
 function normalizeTarget(target) {
     const trimmed = target.trim();
@@ -201,6 +202,17 @@ function registerOmelinkConfigRoute(params) {
         handler
     });
 }
+function registerOmelinkHeartbeatRoute(params) {
+    const handler = createOmelinkHeartbeatHandler();
+    return registerPluginHttpRoute({
+        path: OMELINK_HEARTBEAT_PATH,
+        auth: "gateway",
+        pluginId: OMELINK_CHANNEL_ID,
+        accountId: params.accountId,
+        log: (message) => params.log?.info?.(message),
+        handler
+    });
+}
 export const omelinkPlugin = createChatChannelPlugin({
     base: {
         id: OMELINK_CHANNEL_ID,
@@ -281,11 +293,16 @@ export const omelinkPlugin = createChatChannelPlugin({
                     accountId,
                     log: ctx.log
                 });
+                const unregisterHeartbeat = registerOmelinkHeartbeatRoute({
+                    accountId,
+                    log: ctx.log
+                });
                 return waitUntilAbort(ctx.abortSignal, () => {
                     ctx.log?.info?.(`Stopping OMELINK channel (account: ${accountId})`);
                     unregisterWebhook();
                     unregisterAgentAdmin();
                     unregisterConfig();
+                    unregisterHeartbeat();
                 });
             },
             stopAccount: async (ctx) => {
