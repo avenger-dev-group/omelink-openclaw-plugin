@@ -18,10 +18,19 @@ declare module "openclaw/plugin-sdk/channel-lifecycle" {
   ): Promise<void>;
 }
 
-declare module "openclaw/plugin-sdk/channel-outbound" {
-  export type MessageReceipt = unknown;
-  export function createMessageReceiptFromOutboundResults(params: unknown): unknown;
-  export function defineChannelMessageAdapter(params: unknown): unknown;
+declare module "openclaw/plugin-sdk/channel-send-result" {
+  export type OutboundDeliveryResult = {
+    channel: string;
+    messageId: string;
+    chatId?: string;
+    channelId?: string;
+    roomId?: string;
+    conversationId?: string;
+    timestamp?: number;
+    toJid?: string;
+    pollId?: string;
+    meta?: Record<string, unknown>;
+  };
 }
 
 declare module "openclaw/plugin-sdk/directory-runtime" {

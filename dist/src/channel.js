@@ -1,7 +1,6 @@
 import { DEFAULT_ACCOUNT_ID } from "openclaw/plugin-sdk/account-id";
 import { buildChannelOutboundSessionRoute, createChatChannelPlugin } from "openclaw/plugin-sdk/channel-core";
 import { waitUntilAbort } from "openclaw/plugin-sdk/channel-lifecycle";
-import { createMessageReceiptFromOutboundResults, defineChannelMessageAdapter } from "openclaw/plugin-sdk/channel-outbound";
 import { createEmptyChannelDirectoryAdapter } from "openclaw/plugin-sdk/directory-runtime";
 import { normalizeOutboundReplyPayload } from "openclaw/plugin-sdk/reply-payload";
 import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
@@ -39,30 +38,9 @@ async function sendText(ctx) {
     });
     return {
         messageId: result.messageId,
-        receipt: createMessageReceiptFromOutboundResults({
-            results: [
-                {
-                    channel: OMELINK_CHANNEL_ID,
-                    messageId: result.messageId,
-                    conversationId: externalConversationId
-                }
-            ],
-            kind: "text"
-        })
+        conversationId: externalConversationId
     };
 }
-const omelinkMessageAdapter = defineChannelMessageAdapter({
-    id: OMELINK_CHANNEL_ID,
-    durableFinal: {
-        capabilities: {
-            text: true,
-            messageSendingHooks: true
-        }
-    },
-    send: {
-        text: sendText
-    }
-});
 async function dispatchInboundToOpenClaw(params) {
     const rt = getOmelinkRuntime();
     const currentCfg = rt.config?.current?.() ?? params.cfg;
@@ -313,8 +291,7 @@ export const omelinkPlugin = createChatChannelPlugin({
             stopAccount: async (ctx) => {
                 ctx.log?.info?.(`OMELINK account ${ctx.accountId ?? DEFAULT_ACCOUNT_ID} stopped`);
             }
-        },
-        message: omelinkMessageAdapter
+        }
     },
     outbound: {
         base: {

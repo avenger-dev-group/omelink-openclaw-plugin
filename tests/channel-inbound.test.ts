@@ -23,11 +23,6 @@ vi.mock("openclaw/plugin-sdk/channel-lifecycle", () => ({
   waitUntilAbort: vi.fn(async () => undefined)
 }));
 
-vi.mock("openclaw/plugin-sdk/channel-outbound", () => ({
-  createMessageReceiptFromOutboundResults: vi.fn((params) => params),
-  defineChannelMessageAdapter: vi.fn((params) => params)
-}));
-
 vi.mock("openclaw/plugin-sdk/directory-runtime", () => ({
   createEmptyChannelDirectoryAdapter: vi.fn(() => ({}))
 }));

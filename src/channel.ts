@@ -4,10 +4,7 @@ import {
   createChatChannelPlugin
 } from "openclaw/plugin-sdk/channel-core";
 import { waitUntilAbort } from "openclaw/plugin-sdk/channel-lifecycle";
-import {
-  createMessageReceiptFromOutboundResults,
-  defineChannelMessageAdapter
-} from "openclaw/plugin-sdk/channel-outbound";
+import type { OutboundDeliveryResult } from "openclaw/plugin-sdk/channel-send-result";
 import { createEmptyChannelDirectoryAdapter } from "openclaw/plugin-sdk/directory-runtime";
 import { normalizeOutboundReplyPayload } from "openclaw/plugin-sdk/reply-payload";
 import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
@@ -50,6 +47,8 @@ type SendTextContext = {
   accountId?: string | null;
 };
 
+type SendTextResult = Omit<OutboundDeliveryResult, "channel">;
+
 function normalizeTarget(target: string): string | undefined {
   const trimmed = target.trim();
   if (!trimmed) {
@@ -63,10 +62,7 @@ function buildOutboundMessageId(): string {
   return `openclaw-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-async function sendText(ctx: SendTextContext): Promise<{
-  messageId: string;
-  receipt: unknown;
-}> {
+async function sendText(ctx: SendTextContext): Promise<SendTextResult> {
   const cfg = resolveOmelinkConfig(ctx.cfg);
   const externalConversationId = normalizeTarget(ctx.to);
   if (!externalConversationId) {
@@ -84,31 +80,9 @@ async function sendText(ctx: SendTextContext): Promise<{
 
   return {
     messageId: result.messageId,
-    receipt: createMessageReceiptFromOutboundResults({
-      results: [
-        {
-          channel: OMELINK_CHANNEL_ID,
-          messageId: result.messageId,
-          conversationId: externalConversationId
-        }
-      ],
-      kind: "text"
-    })
+    conversationId: externalConversationId
   };
 }
-
-const omelinkMessageAdapter = defineChannelMessageAdapter({
-  id: OMELINK_CHANNEL_ID,
-  durableFinal: {
-    capabilities: {
-      text: true,
-      messageSendingHooks: true
-    }
-  },
-  send: {
-    text: sendText
-  }
-});
 
 async function dispatchInboundToOpenClaw(params: {
   cfg: unknown;
@@ -433,8 +407,7 @@ export const omelinkPlugin = createChatChannelPlugin({
       stopAccount: async (ctx: GatewayContext) => {
         ctx.log?.info?.(`OMELINK account ${ctx.accountId ?? DEFAULT_ACCOUNT_ID} stopped`);
       }
-    },
-    message: omelinkMessageAdapter
+    }
   },
   outbound: {
     base: {
