@@ -170,15 +170,15 @@ describe("omelink channel inbound gateway", () => {
       abortSignal: new AbortController().signal
     });
 
-    expect(routeHandlers.has("/api/external/openClaw/channel/agents")).toBe(true);
-    expect(routeHandlers.has("/api/external/openClaw/channel/config")).toBe(true);
-    expect(routeHandlers.has("/api/external/openClaw/channel/heartbeat")).toBe(true);
-    expect(routeHandlers.get("/api/external/openClaw/channel/inbound")?.auth).toBe("gateway");
-    expect(routeHandlers.get("/api/external/openClaw/channel/agents")?.auth).toBe("gateway");
-    expect(routeHandlers.get("/api/external/openClaw/channel/config")?.auth).toBe("gateway");
-    expect(routeHandlers.get("/api/external/openClaw/channel/heartbeat")?.auth).toBe("gateway");
+    expect(routeHandlers.has("/api/external/omelink/channel/agents")).toBe(true);
+    expect(routeHandlers.has("/api/external/omelink/channel/config")).toBe(true);
+    expect(routeHandlers.has("/api/external/omelink/channel/heartbeat")).toBe(true);
+    expect(routeHandlers.get("/api/external/omelink/channel/inbound")?.auth).toBe("gateway");
+    expect(routeHandlers.get("/api/external/omelink/channel/agents")?.auth).toBe("gateway");
+    expect(routeHandlers.get("/api/external/omelink/channel/config")?.auth).toBe("gateway");
+    expect(routeHandlers.get("/api/external/omelink/channel/heartbeat")?.auth).toBe("gateway");
 
-    const response = await postWebhook("/api/external/openClaw/channel/inbound", {
+    const response = await postWebhook("/api/external/omelink/channel/inbound", {
       omelink_conversation_id: "local-channel-xxx",
       omelink_message_id: "im-message-001",
       text: "hello"
@@ -205,16 +205,16 @@ describe("omelink channel inbound gateway", () => {
       abortSignal: new AbortController().signal
     });
 
-    expect(routeHandlers.get("/api/external/openClaw/channel/inbound")?.auth).toBe(
+    expect(routeHandlers.get("/api/external/omelink/channel/inbound")?.auth).toBe(
       "gateway"
     );
-    expect(routeHandlers.get("/api/external/openClaw/channel/agents")?.auth).toBe(
+    expect(routeHandlers.get("/api/external/omelink/channel/agents")?.auth).toBe(
       "gateway"
     );
-    expect(routeHandlers.get("/api/external/openClaw/channel/config")?.auth).toBe(
+    expect(routeHandlers.get("/api/external/omelink/channel/config")?.auth).toBe(
       "gateway"
     );
-    expect(routeHandlers.get("/api/external/openClaw/channel/heartbeat")?.auth).toBe(
+    expect(routeHandlers.get("/api/external/omelink/channel/heartbeat")?.auth).toBe(
       "gateway"
     );
   });
@@ -271,7 +271,7 @@ describe("omelink channel inbound gateway", () => {
       abortSignal: new AbortController().signal
     });
 
-    const response = await postWebhook("/api/external/openClaw/channel/inbound", {
+    const response = await postWebhook("/api/external/omelink/channel/inbound", {
       omelink_conversation_id: "local-channel-xxx",
       omelink_message_id: "im-message-002",
       text: "hello"

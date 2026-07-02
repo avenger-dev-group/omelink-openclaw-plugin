@@ -6,7 +6,7 @@ import { createOmelinkWebhookHandler } from "../src/webhook.js";
 
 class MockRequest extends EventEmitter {
   method = "POST";
-  url = "/api/external/openClaw/channel/inbound";
+  url = "/api/external/omelink/channel/inbound";
   headers: IncomingHttpHeaders;
 
   constructor(body: string, headers: IncomingHttpHeaders = {}) {

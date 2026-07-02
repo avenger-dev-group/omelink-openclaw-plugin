@@ -23,8 +23,8 @@ describe("resolveOmelinkConfig", () => {
     expect(config).toEqual({
       baseUrl: "http://im.example.test",
       apiKey: "config-api-key",
-      webhookPath: "/api/external/openClaw/channel/inbound",
-      agentsPath: "/api/external/openClaw/channel/agents"
+      webhookPath: "/api/external/omelink/channel/inbound",
+      agentsPath: "/api/external/omelink/channel/agents"
     });
   });
 

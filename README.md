@@ -97,7 +97,7 @@ OMELINK can verify that the plugin is installed and its gateway routes are
 available by calling the heartbeat endpoint:
 
 ```bash
-curl --location --request GET '<OPENCLAW_GATEWAY_URL>/api/external/openClaw/channel/heartbeat' \
+curl --location --request GET '<OPENCLAW_GATEWAY_URL>/api/external/omelink/channel/heartbeat' \
   --header 'Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>'
 ```
 
@@ -117,7 +117,7 @@ plugin config endpoint. The request field `apiHost` is written to
 `channels.omelink.baseUrl`.
 
 ```bash
-curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/openClaw/channel/config' \
+curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/omelink/channel/config' \
   --header 'Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>' \
   --header 'Content-Type: application/json' \
   --data-raw '{
@@ -137,7 +137,7 @@ the new outbound API config is loaded.
 Send a user message to the plugin webhook:
 
 ```bash
-curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/openClaw/channel/inbound' \
+curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/omelink/channel/inbound' \
   --header 'Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>' \
   --header 'Content-Type: application/json' \
   --data-raw '{
@@ -158,7 +158,7 @@ Fields:
 Create an OpenClaw agent and optionally bind one OMELINK conversation to it:
 
 ```bash
-curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/openClaw/channel/agents' \
+curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/omelink/channel/agents' \
   --header 'Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>' \
   --header 'Content-Type: application/json' \
   --data-raw '{
