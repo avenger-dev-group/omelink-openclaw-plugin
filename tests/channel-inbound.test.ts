@@ -10,6 +10,17 @@ const routeHandlers = new Map<
   }
 >();
 
+const dispatchInboundDirectDmWithRuntime = vi.hoisted(() =>
+  vi.fn(async () => ({
+    route: {
+      agentId: "agent-default",
+      sessionKey: "route-session"
+    },
+    storePath: "/tmp/openclaw-session",
+    ctxPayload: { Body: "hello" }
+  }))
+);
+
 vi.mock("openclaw/plugin-sdk/account-id", () => ({
   DEFAULT_ACCOUNT_ID: "default"
 }));
@@ -21,6 +32,10 @@ vi.mock("openclaw/plugin-sdk/channel-core", () => ({
 
 vi.mock("openclaw/plugin-sdk/channel-lifecycle", () => ({
   waitUntilAbort: vi.fn(async () => undefined)
+}));
+
+vi.mock("openclaw/plugin-sdk/channel-inbound", () => ({
+  dispatchInboundDirectDmWithRuntime
 }));
 
 vi.mock("openclaw/plugin-sdk/directory-runtime", () => ({
@@ -107,6 +122,7 @@ async function postWebhook(path: string, body: unknown) {
 describe("omelink channel inbound gateway", () => {
   beforeEach(() => {
     routeHandlers.clear();
+    dispatchInboundDirectDmWithRuntime.mockClear();
     vi.clearAllMocks();
     vi.stubGlobal(
       "fetch",
@@ -119,19 +135,9 @@ describe("omelink channel inbound gateway", () => {
     );
   });
 
-  it("dispatches webhook messages through OpenClaw channel.inbound runtime", async () => {
+  it("dispatches webhook messages through OpenClaw direct-DM runtime", async () => {
     const { omelinkPlugin } = await import("../src/channel.js");
     const { setOmelinkRuntime } = await import("../src/runtime.js");
-    const buildContext = vi.fn(() => ({ Body: "hello" }));
-    const run = vi.fn(async (params) => {
-      await params.adapter.resolveTurn({
-        timestamp: Date.now(),
-        rawText: "hello",
-        textForAgent: "hello",
-        textForCommands: "hello",
-        raw: params.raw
-      });
-    });
     const resolveAgentRoute = vi.fn(() => ({
       agentId: "agent-default",
       sessionKey: "route-session"
@@ -141,9 +147,17 @@ describe("omelink channel inbound gateway", () => {
     setOmelinkRuntime({
       channel: {
         routing: { resolveAgentRoute },
-        inbound: { buildContext, run },
-        session: { resolveStorePath, recordInboundSession: vi.fn() },
-        reply: { dispatchReplyWithBufferedBlockDispatcher: vi.fn() }
+        session: {
+          resolveStorePath,
+          readSessionUpdatedAt: vi.fn(() => undefined),
+          recordInboundSession: vi.fn()
+        },
+        reply: {
+          finalizeInboundContext: vi.fn((ctx) => ctx),
+          formatAgentEnvelope: vi.fn((params) => params.body),
+          resolveEnvelopeFormatOptions: vi.fn(() => ({})),
+          dispatchReplyWithBufferedBlockDispatcher: vi.fn()
+        }
       },
       config: {
         current: () => ({
@@ -185,15 +199,26 @@ describe("omelink channel inbound gateway", () => {
     });
 
     expect(response.statusCode).toBe(202);
-    expect(buildContext).toHaveBeenCalledOnce();
-    expect(run).toHaveBeenCalledOnce();
-    expect(resolveAgentRoute).toHaveBeenCalledWith(
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(dispatchInboundDirectDmWithRuntime).toHaveBeenCalledOnce();
+    expect(dispatchInboundDirectDmWithRuntime).toHaveBeenCalledWith(
       expect.objectContaining({
         channel: "omelink",
+        channelLabel: "OMELINK",
         accountId: "default",
-        peer: { kind: "direct", id: "local-channel-xxx" }
+        peer: { kind: "direct", id: "local-channel-xxx" },
+        senderId: "local-channel-xxx",
+        senderAddress: "omelink:local-channel-xxx",
+        recipientAddress: "omelink:local-channel-xxx",
+        conversationLabel: "local-channel-xxx",
+        rawBody: "hello",
+        messageId: "im-message-001"
       })
     );
+    expect(
+      dispatchInboundDirectDmWithRuntime.mock.calls[0]?.[0].runtime.channel.routing
+        .resolveAgentRoute
+    ).toBe(resolveAgentRoute);
   });
 
   it("registers gateway routes when the OMELINK channel config is absent", async () => {
@@ -222,20 +247,16 @@ describe("omelink channel inbound gateway", () => {
   it("posts OpenClaw replies directly to the OMELINK messages API", async () => {
     const { omelinkPlugin } = await import("../src/channel.js");
     const { setOmelinkRuntime } = await import("../src/runtime.js");
-    const run = vi.fn(async (params) => {
-      const turn = await params.adapter.resolveTurn({
-        timestamp: Date.now(),
-        rawText: "hello",
-        textForAgent: "hello",
-        textForCommands: "hello",
-        raw: params.raw
-      });
-
-      if (turn.delivery.durable) {
-        return;
-      }
-
-      await turn.delivery.deliver({ text: "OpenClaw reply" }, { kind: "final" });
+    dispatchInboundDirectDmWithRuntime.mockImplementationOnce(async (params) => {
+      await params.deliver({ text: "OpenClaw reply" });
+      return {
+        route: {
+          agentId: "agent-default",
+          sessionKey: "route-session"
+        },
+        storePath: "/tmp/openclaw-session",
+        ctxPayload: { Body: "hello" }
+      };
     });
 
     setOmelinkRuntime({
@@ -246,15 +267,17 @@ describe("omelink channel inbound gateway", () => {
             sessionKey: "route-session"
           }))
         },
-        inbound: {
-          buildContext: vi.fn(() => ({ Body: "hello" })),
-          run
-        },
         session: {
           resolveStorePath: vi.fn(() => "/tmp/openclaw-session"),
+          readSessionUpdatedAt: vi.fn(() => undefined),
           recordInboundSession: vi.fn()
         },
-        reply: { dispatchReplyWithBufferedBlockDispatcher: vi.fn() }
+        reply: {
+          finalizeInboundContext: vi.fn((ctx) => ctx),
+          formatAgentEnvelope: vi.fn((params) => params.body),
+          resolveEnvelopeFormatOptions: vi.fn(() => ({})),
+          dispatchReplyWithBufferedBlockDispatcher: vi.fn()
+        }
       }
     });
 

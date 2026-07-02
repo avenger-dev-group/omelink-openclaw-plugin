@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const OPENCLAW_2026_5_6_PLUGIN_SDK_EXPORTS = new Set([
   "openclaw/plugin-sdk/account-id",
   "openclaw/plugin-sdk/channel-core",
+  "openclaw/plugin-sdk/channel-inbound",
   "openclaw/plugin-sdk/channel-lifecycle",
   "openclaw/plugin-sdk/channel-send-result",
   "openclaw/plugin-sdk/directory-runtime",

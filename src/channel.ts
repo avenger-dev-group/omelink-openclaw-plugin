@@ -3,10 +3,10 @@ import {
   buildChannelOutboundSessionRoute,
   createChatChannelPlugin
 } from "openclaw/plugin-sdk/channel-core";
+import { dispatchInboundDirectDmWithRuntime } from "openclaw/plugin-sdk/channel-inbound";
 import { waitUntilAbort } from "openclaw/plugin-sdk/channel-lifecycle";
 import type { OutboundDeliveryResult } from "openclaw/plugin-sdk/channel-send-result";
 import { createEmptyChannelDirectoryAdapter } from "openclaw/plugin-sdk/directory-runtime";
-import { normalizeOutboundReplyPayload } from "openclaw/plugin-sdk/reply-payload";
 import { registerPluginHttpRoute } from "openclaw/plugin-sdk/webhook-ingress";
 
 import { createOmelinkAgentAdminHandler } from "./agent-admin.js";
@@ -101,15 +101,15 @@ async function dispatchInboundToOpenClaw(params: {
           sessionKey?: string;
         };
       };
-      inbound?: {
-        run?: (params: unknown) => Promise<unknown>;
-        buildContext?: (params: unknown) => unknown;
-      };
       session?: {
         resolveStorePath?: (store: unknown, params: unknown) => string;
+        readSessionUpdatedAt?: (params: unknown) => number | undefined;
         recordInboundSession?: unknown;
       };
       reply?: {
+        finalizeInboundContext?: (params: unknown) => unknown;
+        formatAgentEnvelope?: (params: unknown) => string;
+        resolveEnvelopeFormatOptions?: (cfg: unknown) => unknown;
         dispatchReplyWithBufferedBlockDispatcher?: unknown;
       };
     };
@@ -119,122 +119,66 @@ async function dispatchInboundToOpenClaw(params: {
   };
 
   const currentCfg = rt.config?.current?.() ?? params.cfg;
-  const route = rt.channel?.routing?.resolveAgentRoute?.({
+  if (
+    !rt.channel?.routing?.resolveAgentRoute ||
+    !rt.channel.session?.resolveStorePath ||
+    !rt.channel.session.readSessionUpdatedAt ||
+    !rt.channel.session.recordInboundSession ||
+    !rt.channel.reply?.finalizeInboundContext ||
+    !rt.channel.reply.formatAgentEnvelope ||
+    !rt.channel.reply.resolveEnvelopeFormatOptions ||
+    !rt.channel.reply.dispatchReplyWithBufferedBlockDispatcher
+  ) {
+    throw new Error("OpenClaw channel runtime is missing direct-DM inbound support");
+  }
+
+  return await dispatchInboundDirectDmWithRuntime({
     cfg: currentCfg,
+    runtime: rt,
     channel: OMELINK_CHANNEL_ID,
+    channelLabel: "OMELINK",
     accountId: params.accountId,
     peer: {
       kind: "direct",
       id: params.message.externalConversationId
-    }
-  });
+    },
+    senderId: params.message.externalConversationId,
+    senderAddress: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
+    recipientAddress: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
+    conversationLabel: params.message.externalConversationId,
+    rawBody: params.message.text,
+    bodyForAgent: params.message.text,
+    commandBody: params.message.text,
+    messageId: params.message.externalMessageId,
+    timestamp: Date.now(),
+    provider: OMELINK_CHANNEL_ID,
+    surface: OMELINK_CHANNEL_ID,
+    originatingChannel: OMELINK_CHANNEL_ID,
+    originatingTo: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
+    extraContext: {
+      ExternalMessageId: params.message.externalMessageId
+    },
+    deliver: async (payload) => {
+      const text = typeof payload.text === "string" ? payload.text : undefined;
+      if (!text?.trim()) {
+        return;
+      }
 
-  if (!route || !rt.channel?.inbound?.run || !rt.channel.inbound.buildContext) {
-    throw new Error("OpenClaw channel runtime is missing inbound event support");
-  }
-
-  const routeSessionKey =
-    route.sessionKey ??
-    `${OMELINK_CHANNEL_ID}:${params.accountId}:${route.agentId}:${params.message.externalConversationId}`;
-  return await rt.channel.inbound.run({
-    channel: OMELINK_CHANNEL_ID,
-    accountId: params.accountId,
-    raw: params.message,
-    adapter: {
-      ingest: (message: OmelinkInboundMessage) => ({
-        id: message.externalMessageId,
-        timestamp: Date.now(),
-        rawText: message.text,
-        textForAgent: message.text,
-        textForCommands: message.text,
-        raw: message
-      }),
-      resolveTurn: () => ({
-        cfg: currentCfg,
-        channel: OMELINK_CHANNEL_ID,
-        accountId: params.accountId,
-        agentId: route.agentId,
-        routeSessionKey,
-        storePath: rt.channel?.session?.resolveStorePath?.(
-          (currentCfg as { session?: { store?: unknown } })?.session?.store,
-          { agentId: route.agentId }
-        ),
-        ctxPayload: rt.channel?.inbound?.buildContext?.({
-          channel: OMELINK_CHANNEL_ID,
-          accountId: params.accountId,
-          timestamp: Date.now(),
-          from: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
-          sender: {
-            id: params.message.externalConversationId,
-            name: params.message.externalConversationId
-          },
-          conversation: {
-            kind: "direct",
-            id: params.message.externalConversationId,
-            label: params.message.externalConversationId,
-            routePeer: {
-              kind: "direct",
-              id: params.message.externalConversationId
-            }
-          },
-          route: {
-            agentId: route.agentId,
-            accountId: params.accountId,
-            routeSessionKey,
-            dispatchSessionKey: routeSessionKey
-          },
-          reply: {
-            to: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
-            originatingTo: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`
-          },
-          message: {
-            rawBody: params.message.text,
-            commandBody: params.message.text,
-            bodyForAgent: params.message.text,
-            envelopeFrom: params.message.externalConversationId
-          },
-          extra: {
-            ExternalMessageId: params.message.externalMessageId
-          }
-        }),
-        recordInboundSession: rt.channel?.session?.recordInboundSession,
-        dispatchReplyWithBufferedBlockDispatcher:
-          rt.channel?.reply?.dispatchReplyWithBufferedBlockDispatcher,
-        delivery: {
-          preparePayload: (payload: unknown) =>
-            payload && typeof payload === "object"
-              ? normalizeOutboundReplyPayload(payload as Record<string, unknown>)
-              : {},
-          deliver: async (payload: unknown) => {
-            const normalized =
-              payload && typeof payload === "object"
-                ? normalizeOutboundReplyPayload(payload as Record<string, unknown>)
-                : {};
-            const text = normalized.text;
-            if (!text?.trim()) {
-              return { visibleReplySent: false };
-            }
-
-            const externalMessageId = buildOutboundMessageId();
-            await sendOmelinkTextMessage({
-              baseUrl: params.config.baseUrl,
-              apiKey: params.config.apiKey,
-              externalConversationId: params.message.externalConversationId,
-              externalMessageId,
-              text
-            });
-            return {
-              messageIds: [externalMessageId],
-              visibleReplySent: true
-            };
-          },
-          onError: (error: unknown) => {
-            throw error instanceof Error
-              ? error
-              : new Error(`OMELINK reply delivery failed: ${String(error)}`);
-          }
-        }
-      })
+      const externalMessageId = buildOutboundMessageId();
+      await sendOmelinkTextMessage({
+        baseUrl: params.config.baseUrl,
+        apiKey: params.config.apiKey,
+        externalConversationId: params.message.externalConversationId,
+        externalMessageId,
+        text
+      });
+    },
+    onRecordError: (err) => {
+      params.log?.error?.(err instanceof Error ? err.message : String(err));
+    },
+    onDispatchError: (err, info) => {
+      const message = err instanceof Error ? err.message : String(err);
+      params.log?.error?.(`OMELINK inbound dispatch failed (${info.kind}): ${message}`);
     }
   });
 }

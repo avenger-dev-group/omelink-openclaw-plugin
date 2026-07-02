@@ -7,6 +7,37 @@ declare module "openclaw/plugin-sdk/channel-core" {
   export function createChatChannelPlugin(params: unknown): unknown;
 }
 
+declare module "openclaw/plugin-sdk/channel-inbound" {
+  export function dispatchInboundDirectDmWithRuntime(params: {
+    cfg: unknown;
+    runtime: unknown;
+    channel: string;
+    channelLabel: string;
+    accountId: string;
+    peer: {
+      kind: "direct";
+      id: string;
+    };
+    senderId: string;
+    senderAddress: string;
+    recipientAddress: string;
+    conversationLabel: string;
+    rawBody: string;
+    bodyForAgent?: string;
+    commandBody?: string;
+    messageId: string;
+    timestamp?: number;
+    provider?: string;
+    surface?: string;
+    originatingChannel?: string;
+    originatingTo?: string;
+    extraContext?: Record<string, unknown>;
+    deliver: (payload: { text?: string }) => Promise<void>;
+    onRecordError: (err: unknown) => void;
+    onDispatchError: (err: unknown, info: { kind: string }) => void;
+  }): Promise<unknown>;
+}
+
 declare module "openclaw/plugin-sdk/channel-entry-contract" {
   export function defineBundledChannelEntry(params: unknown): unknown;
 }
