@@ -8,6 +8,17 @@ export type CreateOmelinkAgentParams = {
     workspace?: string;
     agentDir?: string;
 };
+type OmelinkAgentMutationResult = {
+    agentId: string;
+    created: boolean;
+    bound: boolean;
+    workspace: string;
+    agentDir: string;
+};
+export type CreateOmelinkAgentsParams = {
+    configPath?: string;
+    agents: CreateOmelinkAgentParams[];
+};
 export type CreateOmelinkAgentResult = {
     ok: true;
     agentId: string;
@@ -19,10 +30,18 @@ export type CreateOmelinkAgentResult = {
     workspace: string;
     agentDir: string;
 };
+export type CreateOmelinkAgentsResult = {
+    ok: true;
+    agents: OmelinkAgentMutationResult[];
+    dmScope: string;
+    configPath: string;
+    backupPath: string;
+};
 export declare class OmelinkAgentAdminError extends Error {
     readonly statusCode: number;
     constructor(message: string, statusCode?: number);
 }
+export declare function createOrBindOmelinkAgents(params: CreateOmelinkAgentsParams): Promise<CreateOmelinkAgentsResult>;
 export declare function createOrBindOmelinkAgent(params: CreateOmelinkAgentParams): Promise<CreateOmelinkAgentResult>;
 export declare function createOmelinkAgentAdminHandler(params: {
     configPath?: string;
@@ -32,3 +51,4 @@ export declare function createOmelinkAgentAdminHandler(params: {
         error?: (message: string) => void;
     };
 }): (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+export {};

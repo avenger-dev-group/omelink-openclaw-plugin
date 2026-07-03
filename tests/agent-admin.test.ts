@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from "node:http";
@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   createOmelinkAgentAdminHandler,
-  createOrBindOmelinkAgent
+  createOrBindOmelinkAgents
 } from "../src/agent-admin.js";
 
 const tempDirs: string[] = [];
@@ -76,32 +76,60 @@ afterEach(async () => {
   }
 });
 
-describe("createOrBindOmelinkAgent", () => {
-  it("creates an agent, binds an external conversation, and enables per-channel session scope", async () => {
+describe("createOrBindOmelinkAgents", () => {
+  it("creates multiple agents, binds conversations, and writes one config backup", async () => {
     const { dir, configPath } = await createConfigFile(`{
       "agents": { "defaults": { "model": "metis-coder/metis-coder" } },
       models: { "mode": "merge" }
     }\n`);
 
-    const result = await createOrBindOmelinkAgent({
+    const result = await createOrBindOmelinkAgents({
       configPath,
-      agentId: "support",
-      name: "Support Agent",
-      externalConversationId: "local-channel-support",
-      model: "metis-coder/metis-coder",
-      workspace: path.join(dir, "support-workspace"),
-      agentDir: path.join(dir, "support-agent")
+      agents: [
+        {
+          agentId: "support",
+          name: "Support Agent",
+          externalConversationId: "local-channel-support",
+          model: "metis-coder/metis-coder",
+          workspace: path.join(dir, "support-workspace"),
+          agentDir: path.join(dir, "support-agent")
+        },
+        {
+          agentId: "sales",
+          name: "Sales Agent",
+          externalConversationId: "local-channel-sales",
+          workspace: path.join(dir, "sales-workspace"),
+          agentDir: path.join(dir, "sales-agent")
+        }
+      ]
     });
 
     const config = JSON.parse(await readFile(configPath, "utf8"));
+    const backups = (await readdir(dir)).filter((entry) =>
+      entry.startsWith("openclaw.json.bak.omelink-agent-")
+    );
 
     expect(result).toMatchObject({
       ok: true,
-      agentId: "support",
-      created: true,
-      bound: true,
-      dmScope: "per-channel-peer"
+      dmScope: "per-channel-peer",
+      agents: [
+        {
+          agentId: "support",
+          created: true,
+          bound: true,
+          workspace: path.join(dir, "support-workspace"),
+          agentDir: path.join(dir, "support-agent")
+        },
+        {
+          agentId: "sales",
+          created: true,
+          bound: true,
+          workspace: path.join(dir, "sales-workspace"),
+          agentDir: path.join(dir, "sales-agent")
+        }
+      ]
     });
+    expect(backups).toHaveLength(1);
     expect(config.session.dmScope).toBe("per-channel-peer");
     expect(config.agents.list).toEqual(
       expect.arrayContaining([
@@ -109,6 +137,10 @@ describe("createOrBindOmelinkAgent", () => {
           id: "support",
           name: "Support Agent",
           model: "metis-coder/metis-coder"
+        }),
+        expect.objectContaining({
+          id: "sales",
+          name: "Sales Agent"
         })
       ])
     );
@@ -122,6 +154,21 @@ describe("createOrBindOmelinkAgent", () => {
           peer: {
             kind: "direct",
             id: "local-channel-support"
+          }
+        },
+        session: {
+          dmScope: "per-channel-peer"
+        }
+      },
+      {
+        type: "route",
+        agentId: "sales",
+        match: {
+          channel: "omelink",
+          accountId: "default",
+          peer: {
+            kind: "direct",
+            id: "local-channel-sales"
           }
         },
         session: {
@@ -147,10 +194,14 @@ describe("createOrBindOmelinkAgent", () => {
     }));
 
     await expect(
-      createOrBindOmelinkAgent({
+      createOrBindOmelinkAgents({
         configPath,
-        agentId: "support",
-        externalConversationId: "local-channel-support"
+        agents: [
+          {
+            agentId: "support",
+            externalConversationId: "local-channel-support"
+          }
+        ]
       })
     ).rejects.toThrow(
       'omelink_conversation_id "local-channel-support" is already bound to agent "sales"'
@@ -159,26 +210,50 @@ describe("createOrBindOmelinkAgent", () => {
 });
 
 describe("createOmelinkAgentAdminHandler", () => {
-  it("creates an agent over HTTP", async () => {
+  it("creates multiple agents over HTTP", async () => {
     const { dir, configPath } = await createConfigFile("{}\n");
 
     const response = await invokeHandler({
       configPath,
       body: {
-        agent_id: "support",
-        name: "Support Agent",
-        omelink_conversation_id: "local-channel-support",
-        workspace: path.join(dir, "support-workspace"),
-        agent_dir: path.join(dir, "support-agent")
+        agents: [
+          {
+            agent_id: "support",
+            name: "Support Agent",
+            omelink_conversation_id: "local-channel-support",
+            workspace: path.join(dir, "support-workspace"),
+            agent_dir: path.join(dir, "support-agent")
+          },
+          {
+            agent_id: "sales",
+            name: "Sales Agent",
+            omelink_conversation_id: "local-channel-sales",
+            workspace: path.join(dir, "sales-workspace"),
+            agent_dir: path.join(dir, "sales-agent")
+          }
+        ]
       }
     });
 
     expect(response.statusCode).toBe(201);
     expect(JSON.parse(response.body)).toMatchObject({
       ok: true,
-      agent_id: "support",
-      created: true,
-      bound: true,
+      agents: [
+        {
+          agent_id: "support",
+          created: true,
+          bound: true,
+          workspace: path.join(dir, "support-workspace"),
+          agent_dir: path.join(dir, "support-agent")
+        },
+        {
+          agent_id: "sales",
+          created: true,
+          bound: true,
+          workspace: path.join(dir, "sales-workspace"),
+          agent_dir: path.join(dir, "sales-agent")
+        }
+      ],
       restart_required: true
     });
   });
@@ -189,7 +264,11 @@ describe("createOmelinkAgentAdminHandler", () => {
     const response = await invokeHandler({
       configPath,
       body: {
-        agent_id: "Support Agent"
+        agents: [
+          {
+            agent_id: "Support Agent"
+          }
+        ]
       }
     });
 

@@ -120,42 +120,70 @@ function sameOmelinkPeerBinding(binding, externalConversationId) {
         binding.match.peer?.kind === "direct" &&
         binding.match.peer.id === externalConversationId);
 }
-export async function createOrBindOmelinkAgent(params) {
-    const configPath = resolveConfigPath(params.configPath);
-    const agentId = normalizeAgentId(params.agentId);
-    const workspace = params.workspace?.trim() || defaultAgentWorkspace(agentId);
-    const agentDir = params.agentDir?.trim() || defaultAgentDir(agentId);
-    const source = await readFile(configPath, "utf8");
-    const config = parseOpenClawConfig(source);
-    const agents = Array.isArray(config.agents?.list) ? [...config.agents.list] : [];
-    const existing = findAgent(agents, agentId);
+function applyAgentToConfig(params) {
+    const agentId = normalizeAgentId(params.input.agentId);
+    const workspace = params.input.workspace?.trim() || defaultAgentWorkspace(agentId);
+    const agentDir = params.input.agentDir?.trim() || defaultAgentDir(agentId);
+    const existing = findAgent(params.agents, agentId);
     const created = !existing;
     const nextAgent = {
         ...(existing ?? { id: agentId }),
-        ...(params.name?.trim() ? { name: params.name.trim() } : {}),
+        ...(params.input.name?.trim() ? { name: params.input.name.trim() } : {}),
         workspace,
         agentDir,
-        ...(params.model?.trim() ? { model: params.model.trim() } : {})
+        ...(params.input.model?.trim() ? { model: params.input.model.trim() } : {})
     };
     if (existing) {
-        agents[agents.indexOf(existing)] = nextAgent;
+        params.agents[params.agents.indexOf(existing)] = nextAgent;
     }
     else {
-        agents.push(nextAgent);
+        params.agents.push(nextAgent);
     }
     let bound = false;
-    const bindings = Array.isArray(config.bindings) ? [...config.bindings] : [];
-    const externalConversationId = params.externalConversationId?.trim();
+    const externalConversationId = params.input.externalConversationId?.trim();
     if (externalConversationId) {
-        const existingBinding = bindings.find((binding) => isRouteBinding(binding) && sameOmelinkPeerBinding(binding, externalConversationId));
+        const existingBinding = params.bindings.find((binding) => isRouteBinding(binding) && sameOmelinkPeerBinding(binding, externalConversationId));
         if (existingBinding && existingBinding.agentId !== agentId) {
             throw new OmelinkAgentAdminError(`omelink_conversation_id "${externalConversationId}" is already bound to agent "${existingBinding.agentId}"`, 409);
         }
         if (!existingBinding) {
-            bindings.push(buildBinding({ agentId, externalConversationId }));
+            params.bindings.push(buildBinding({ agentId, externalConversationId }));
             bound = true;
         }
     }
+    return {
+        agentId,
+        created,
+        bound,
+        workspace,
+        agentDir
+    };
+}
+function assertNoDuplicateAgentIds(agents) {
+    const seen = new Set();
+    for (const agent of agents) {
+        const agentId = normalizeAgentId(agent.agentId);
+        if (seen.has(agentId)) {
+            throw new OmelinkAgentAdminError(`Duplicate agent_id: ${agentId}`, 400);
+        }
+        seen.add(agentId);
+    }
+}
+export async function createOrBindOmelinkAgents(params) {
+    if (params.agents.length === 0) {
+        throw new OmelinkAgentAdminError("agents must be a non-empty array", 400);
+    }
+    assertNoDuplicateAgentIds(params.agents);
+    const configPath = resolveConfigPath(params.configPath);
+    const source = await readFile(configPath, "utf8");
+    const config = parseOpenClawConfig(source);
+    const agents = Array.isArray(config.agents?.list) ? [...config.agents.list] : [];
+    const bindings = Array.isArray(config.bindings) ? [...config.bindings] : [];
+    const results = params.agents.map((input) => applyAgentToConfig({
+        agents,
+        bindings,
+        input
+    }));
     const nextConfig = {
         ...config,
         agents: {
@@ -170,26 +198,41 @@ export async function createOrBindOmelinkAgent(params) {
         },
         ...(bindings.length > 0 ? { bindings } : {})
     };
-    await mkdir(workspace, { recursive: true });
-    await mkdir(agentDir, { recursive: true });
+    await Promise.all(results.flatMap((result) => [
+        mkdir(result.workspace, { recursive: true }),
+        mkdir(result.agentDir, { recursive: true })
+    ]));
     const backupPath = await writeConfigWithBackup(configPath, nextConfig);
     return {
         ok: true,
-        agentId,
-        created,
-        bound,
+        agents: results,
         dmScope: String(nextConfig.session?.dmScope ?? DM_SCOPE),
         configPath,
-        backupPath,
-        workspace,
-        agentDir
+        backupPath
     };
 }
-function normalizeRequestPayload(payload) {
-    if (!payload || Array.isArray(payload) || typeof payload !== "object") {
-        throw new OmelinkAgentAdminError("Invalid JSON body", 400);
+export async function createOrBindOmelinkAgent(params) {
+    const result = await createOrBindOmelinkAgents({
+        configPath: params.configPath,
+        agents: [params]
+    });
+    const agent = result.agents[0];
+    if (!agent) {
+        throw new OmelinkAgentAdminError("agents must be a non-empty array", 400);
     }
-    const record = payload;
+    return {
+        ok: true,
+        agentId: agent.agentId,
+        created: agent.created,
+        bound: agent.bound,
+        dmScope: result.dmScope,
+        configPath: result.configPath,
+        backupPath: result.backupPath,
+        workspace: agent.workspace,
+        agentDir: agent.agentDir
+    };
+}
+function normalizeRequestAgent(record) {
     const agentId = readString(record, "agent_id");
     if (!agentId) {
         throw new OmelinkAgentAdminError("Missing required field: agent_id", 400);
@@ -203,6 +246,33 @@ function normalizeRequestPayload(payload) {
         agentDir: readString(record, "agent_dir")
     };
 }
+function normalizeRequestPayload(payload) {
+    if (!payload || Array.isArray(payload) || typeof payload !== "object") {
+        throw new OmelinkAgentAdminError("Invalid JSON body", 400);
+    }
+    const record = payload;
+    if (!("agents" in record)) {
+        throw new OmelinkAgentAdminError("Missing required field: agents", 400);
+    }
+    if (!Array.isArray(record.agents) || record.agents.length === 0) {
+        throw new OmelinkAgentAdminError("agents must be a non-empty array", 400);
+    }
+    return record.agents.map((agent) => {
+        if (!agent || Array.isArray(agent) || typeof agent !== "object") {
+            throw new OmelinkAgentAdminError("agents[] entries must be objects", 400);
+        }
+        return normalizeRequestAgent(agent);
+    });
+}
+function serializeAgentResult(result) {
+    return {
+        agent_id: result.agentId,
+        created: result.created,
+        bound: result.bound,
+        workspace: result.workspace,
+        agent_dir: result.agentDir
+    };
+}
 export function createOmelinkAgentAdminHandler(params) {
     return async (req, res) => {
         if (req.method !== "POST") {
@@ -211,19 +281,17 @@ export function createOmelinkAgentAdminHandler(params) {
         }
         try {
             const input = normalizeRequestPayload(parseJsonBody(await readRequestBody(req)));
-            const result = await createOrBindOmelinkAgent({
-                ...input,
+            const result = await createOrBindOmelinkAgents({
+                agents: input,
                 configPath: params.configPath
             });
-            params.log?.info?.(`Created or updated OMELINK agent ${result.agentId}`);
-            respondJson(res, result.created ? 201 : 200, {
+            params.log?.info?.(`Created or updated OMELINK agents ${result.agents
+                .map((agent) => agent.agentId)
+                .join(", ")}`);
+            respondJson(res, result.agents.some((agent) => agent.created) ? 201 : 200, {
                 ok: true,
-                agent_id: result.agentId,
-                created: result.created,
-                bound: result.bound,
+                agents: result.agents.map(serializeAgentResult),
                 dm_scope: result.dmScope,
-                workspace: result.workspace,
-                agent_dir: result.agentDir,
                 restart_required: true
             });
         }

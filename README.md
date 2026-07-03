@@ -153,35 +153,46 @@ Fields:
 - `omelink_message_id`: unique OMELINK message ID. The plugin uses it for short-term duplicate protection.
 - `text`: plain text message body.
 
-## Create or Bind an Agent
+## Create or Bind Agents
 
-Create an OpenClaw agent and optionally bind one OMELINK conversation to it:
+Create OpenClaw agents and optionally bind OMELINK conversations to them:
 
 ```bash
 curl --location --request POST '<OPENCLAW_GATEWAY_URL>/api/external/omelink/channel/agents' \
   --header 'Authorization: Bearer <OPENCLAW_GATEWAY_TOKEN>' \
   --header 'Content-Type: application/json' \
   --data-raw '{
-    "agent_id": "support",
-    "name": "Support Agent",
-    "omelink_conversation_id": "omelink-conversation-support",
-    "model": "metis-coder/metis-coder"
+    "agents": [
+      {
+        "agent_id": "support",
+        "name": "Support Agent",
+        "omelink_conversation_id": "omelink-conversation-support",
+        "model": "metis-coder/metis-coder"
+      },
+      {
+        "agent_id": "sales",
+        "name": "Sales Agent",
+        "omelink_conversation_id": "omelink-conversation-sales",
+        "model": "metis-coder/metis-coder"
+      }
+    ]
   }'
 ```
 
 Fields:
 
-- `agent_id`: required. Lowercase safe ID matching `^[a-z][a-z0-9_-]{0,63}$`; `main` is reserved.
-- `name`: optional display name.
-- `omelink_conversation_id`: optional OMELINK single-user conversation ID to route to this agent.
-- `model`: optional OpenClaw model ID for this agent.
-- `workspace`: optional absolute workspace path. Defaults to `~/.openclaw/agents/<agent_id>/workspace`.
-- `agent_dir`: optional absolute agent state path. Defaults to `~/.openclaw/agents/<agent_id>/agent`.
+- `agents`: required non-empty array of agent definitions.
+- `agents[].agent_id`: required. Lowercase safe ID matching `^[a-z][a-z0-9_-]{0,63}$`; `main` is reserved.
+- `agents[].name`: optional display name.
+- `agents[].omelink_conversation_id`: optional OMELINK single-user conversation ID to route to this agent.
+- `agents[].model`: optional OpenClaw model ID for this agent.
+- `agents[].workspace`: optional absolute workspace path. Defaults to `~/.openclaw/agents/<agent_id>/workspace`.
+- `agents[].agent_dir`: optional absolute agent state path. Defaults to `~/.openclaw/agents/<agent_id>/agent`.
 
-The endpoint updates OpenClaw config by adding:
+The endpoint updates OpenClaw config in one batch by adding:
 
-- `agents.list[]` entry for the agent.
-- `bindings[]` route for `omelink` + `omelink_conversation_id`, when provided.
+- `agents.list[]` entries for the agents.
+- `bindings[]` routes for `omelink` + `omelink_conversation_id`, when provided.
 - `session.dmScope: "per-channel-peer"` when unset or set to `"main"`, so different `omelink_conversation_id` values keep separate context.
 
 The response includes `restart_required: true`. Restart the OpenClaw gateway after creating or changing agents so the new routing config is loaded.
@@ -191,12 +202,23 @@ Success response:
 ```json
 {
   "ok": true,
-  "agent_id": "support",
-  "created": true,
-  "bound": true,
+  "agents": [
+    {
+      "agent_id": "support",
+      "created": true,
+      "bound": true,
+      "workspace": "/Users/you/.openclaw/agents/support/workspace",
+      "agent_dir": "/Users/you/.openclaw/agents/support/agent"
+    },
+    {
+      "agent_id": "sales",
+      "created": true,
+      "bound": true,
+      "workspace": "/Users/you/.openclaw/agents/sales/workspace",
+      "agent_dir": "/Users/you/.openclaw/agents/sales/agent"
+    }
+  ],
   "dm_scope": "per-channel-peer",
-  "workspace": "/Users/you/.openclaw/agents/support/workspace",
-  "agent_dir": "/Users/you/.openclaw/agents/support/agent",
   "restart_required": true
 }
 ```
