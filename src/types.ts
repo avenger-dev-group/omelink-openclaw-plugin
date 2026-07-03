@@ -30,13 +30,13 @@ export interface OmelinkOutboundMessage {
 }
 
 export interface OmelinkInboundWebhookPayload {
-  omelink_conversation_id: string;
+  omelink_agent_id: string;
   omelink_message_id: string;
   text: string;
 }
 
 export interface OmelinkInboundMessage {
-  externalConversationId: string;
+  externalAgentId: string;
   externalMessageId: string;
   text: string;
 }

@@ -77,7 +77,7 @@ afterEach(async () => {
 });
 
 describe("createOrBindOmelinkAgents", () => {
-  it("creates multiple agents, binds conversations, and writes one config backup", async () => {
+  it("creates multiple agents, binds OMELINK agent IDs, and writes one config backup", async () => {
     const { dir, configPath } = await createConfigFile(`{
       "agents": { "defaults": { "model": "metis-coder/metis-coder" } },
       models: { "mode": "merge" }
@@ -89,7 +89,7 @@ describe("createOrBindOmelinkAgents", () => {
         {
           agentId: "support",
           name: "Support Agent",
-          externalConversationId: "local-channel-support",
+          externalAgentId: "local-agent-support",
           model: "metis-coder/metis-coder",
           workspace: path.join(dir, "support-workspace"),
           agentDir: path.join(dir, "support-agent")
@@ -97,7 +97,7 @@ describe("createOrBindOmelinkAgents", () => {
         {
           agentId: "sales",
           name: "Sales Agent",
-          externalConversationId: "local-channel-sales",
+          externalAgentId: "local-agent-sales",
           workspace: path.join(dir, "sales-workspace"),
           agentDir: path.join(dir, "sales-agent")
         }
@@ -153,7 +153,7 @@ describe("createOrBindOmelinkAgents", () => {
           accountId: "default",
           peer: {
             kind: "direct",
-            id: "local-channel-support"
+            id: "local-agent-support"
           }
         },
         session: {
@@ -168,7 +168,7 @@ describe("createOrBindOmelinkAgents", () => {
           accountId: "default",
           peer: {
             kind: "direct",
-            id: "local-channel-sales"
+            id: "local-agent-sales"
           }
         },
         session: {
@@ -187,7 +187,7 @@ describe("createOrBindOmelinkAgents", () => {
           match: {
             channel: "omelink",
             accountId: "default",
-            peer: { kind: "direct", id: "local-channel-support" }
+            peer: { kind: "direct", id: "local-agent-support" }
           }
         }
       ]
@@ -199,12 +199,12 @@ describe("createOrBindOmelinkAgents", () => {
         agents: [
           {
             agentId: "support",
-            externalConversationId: "local-channel-support"
+            externalAgentId: "local-agent-support"
           }
         ]
       })
     ).rejects.toThrow(
-      'omelink_conversation_id "local-channel-support" is already bound to agent "sales"'
+      'omelink_agent_id "local-agent-support" is already bound to agent "sales"'
     );
   });
 });
@@ -220,14 +220,14 @@ describe("createOmelinkAgentAdminHandler", () => {
           {
             agent_id: "support",
             name: "Support Agent",
-            omelink_conversation_id: "local-channel-support",
+            omelink_agent_id: "local-agent-support",
             workspace: path.join(dir, "support-workspace"),
             agent_dir: path.join(dir, "support-agent")
           },
           {
             agent_id: "sales",
             name: "Sales Agent",
-            omelink_conversation_id: "local-channel-sales",
+            omelink_agent_id: "local-agent-sales",
             workspace: path.join(dir, "sales-workspace"),
             agent_dir: path.join(dir, "sales-agent")
           }

@@ -63,12 +63,12 @@ async function dispatchInboundToOpenClaw(params) {
         accountId: params.accountId,
         peer: {
             kind: "direct",
-            id: params.message.externalConversationId
+            id: params.message.externalAgentId
         },
-        senderId: params.message.externalConversationId,
-        senderAddress: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
-        recipientAddress: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
-        conversationLabel: params.message.externalConversationId,
+        senderId: params.message.externalAgentId,
+        senderAddress: `${OMELINK_CHANNEL_ID}:${params.message.externalAgentId}`,
+        recipientAddress: `${OMELINK_CHANNEL_ID}:${params.message.externalAgentId}`,
+        conversationLabel: params.message.externalAgentId,
         rawBody: params.message.text,
         bodyForAgent: params.message.text,
         commandBody: params.message.text,
@@ -77,7 +77,7 @@ async function dispatchInboundToOpenClaw(params) {
         provider: OMELINK_CHANNEL_ID,
         surface: OMELINK_CHANNEL_ID,
         originatingChannel: OMELINK_CHANNEL_ID,
-        originatingTo: `${OMELINK_CHANNEL_ID}:${params.message.externalConversationId}`,
+        originatingTo: `${OMELINK_CHANNEL_ID}:${params.message.externalAgentId}`,
         extraContext: {
             ExternalMessageId: params.message.externalMessageId
         },
@@ -90,7 +90,7 @@ async function dispatchInboundToOpenClaw(params) {
             await sendOmelinkTextMessage({
                 baseUrl: params.config.baseUrl,
                 apiKey: params.config.apiKey,
-                externalConversationId: params.message.externalConversationId,
+                externalConversationId: params.message.externalAgentId,
                 externalMessageId,
                 text
             });

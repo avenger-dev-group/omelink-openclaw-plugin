@@ -67,7 +67,7 @@ describe("createOmelinkWebhookHandler", () => {
   it("accepts valid webhook payloads and delivers normalized inbound messages", async () => {
     const { deliver, response } = await invokeHandler({
       body: {
-        omelink_conversation_id: "local-channel-xxx",
+        omelink_agent_id: "local-agent-xxx",
         omelink_message_id: "im-message-xxx",
         text: "hello"
       }
@@ -77,7 +77,7 @@ describe("createOmelinkWebhookHandler", () => {
     expect(JSON.parse(response.body)).toEqual({ ok: true });
     expect(deliver).toHaveBeenCalledOnce();
     expect(deliver).toHaveBeenCalledWith({
-      externalConversationId: "local-channel-xxx",
+      externalAgentId: "local-agent-xxx",
       externalMessageId: "im-message-xxx",
       text: "hello"
     });
@@ -86,7 +86,7 @@ describe("createOmelinkWebhookHandler", () => {
   it("rejects payloads missing required fields with 400", async () => {
     const { deliver, response } = await invokeHandler({
       body: {
-        omelink_conversation_id: "local-channel-xxx",
+        omelink_agent_id: "local-agent-xxx",
         text: "hello"
       }
     });
@@ -105,7 +105,7 @@ describe("createOmelinkWebhookHandler", () => {
       deliver
     });
     const body = {
-      omelink_conversation_id: "local-channel-xxx",
+      omelink_agent_id: "local-agent-xxx",
       omelink_message_id: "im-message-xxx",
       text: "hello"
     };
@@ -141,7 +141,7 @@ describe("createOmelinkWebhookHandler", () => {
       deliver,
       log,
       body: {
-        omelink_conversation_id: "local-channel-xxx",
+        omelink_agent_id: "local-agent-xxx",
         omelink_message_id: "im-message-async-fail",
         text: "hello"
       }

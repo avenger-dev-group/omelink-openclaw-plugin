@@ -76,12 +76,12 @@ function normalizePayload(payload: unknown): {
   const record = payload as Partial<OmelinkInboundWebhookPayload> &
     Record<string, unknown>;
   const missing: string[] = [];
-  const externalConversationId = requiredString(record, "omelink_conversation_id");
+  const externalAgentId = requiredString(record, "omelink_agent_id");
   const externalMessageId = requiredString(record, "omelink_message_id");
   const text = requiredString(record, "text");
 
-  if (!externalConversationId) {
-    missing.push("omelink_conversation_id");
+  if (!externalAgentId) {
+    missing.push("omelink_agent_id");
   }
   if (!externalMessageId) {
     missing.push("omelink_message_id");
@@ -97,14 +97,14 @@ function normalizePayload(payload: unknown): {
     };
   }
 
-  if (!externalConversationId || !externalMessageId || !text) {
+  if (!externalAgentId || !externalMessageId || !text) {
     return { ok: false, error: "Missing required fields" };
   }
 
   return {
     ok: true,
     message: {
-      externalConversationId,
+      externalAgentId,
       externalMessageId,
       text
     }

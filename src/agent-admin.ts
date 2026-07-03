@@ -50,7 +50,7 @@ export type CreateOmelinkAgentParams = {
   configPath?: string;
   agentId: string;
   name?: string;
-  externalConversationId?: string;
+  externalAgentId?: string;
   model?: string;
   workspace?: string;
   agentDir?: string;
@@ -207,7 +207,7 @@ function findAgent(agents: AgentEntry[], agentId: string): AgentEntry | undefine
 
 function buildBinding(params: {
   agentId: string;
-  externalConversationId: string;
+  externalAgentId: string;
 }): RouteBinding {
   return {
     type: "route",
@@ -217,7 +217,7 @@ function buildBinding(params: {
       accountId: DEFAULT_ACCOUNT_ID,
       peer: {
         kind: "direct",
-        id: params.externalConversationId
+        id: params.externalAgentId
       }
     },
     session: {
@@ -226,12 +226,12 @@ function buildBinding(params: {
   };
 }
 
-function sameOmelinkPeerBinding(binding: RouteBinding, externalConversationId: string): boolean {
+function sameOmelinkPeerBinding(binding: RouteBinding, externalAgentId: string): boolean {
   return (
     binding.match.channel === OMELINK_CHANNEL_ID &&
     (binding.match.accountId ?? DEFAULT_ACCOUNT_ID) === DEFAULT_ACCOUNT_ID &&
     binding.match.peer?.kind === "direct" &&
-    binding.match.peer.id === externalConversationId
+    binding.match.peer.id === externalAgentId
   );
 }
 
@@ -260,20 +260,20 @@ function applyAgentToConfig(params: {
   }
 
   let bound = false;
-  const externalConversationId = params.input.externalConversationId?.trim();
-  if (externalConversationId) {
+  const externalAgentId = params.input.externalAgentId?.trim();
+  if (externalAgentId) {
     const existingBinding = params.bindings.find(
       (binding): binding is RouteBinding =>
-        isRouteBinding(binding) && sameOmelinkPeerBinding(binding, externalConversationId)
+        isRouteBinding(binding) && sameOmelinkPeerBinding(binding, externalAgentId)
     );
     if (existingBinding && existingBinding.agentId !== agentId) {
       throw new OmelinkAgentAdminError(
-        `omelink_conversation_id "${externalConversationId}" is already bound to agent "${existingBinding.agentId}"`,
+        `omelink_agent_id "${externalAgentId}" is already bound to agent "${existingBinding.agentId}"`,
         409
       );
     }
     if (!existingBinding) {
-      params.bindings.push(buildBinding({ agentId, externalConversationId }));
+      params.bindings.push(buildBinding({ agentId, externalAgentId }));
       bound = true;
     }
   }
@@ -387,7 +387,7 @@ function normalizeRequestAgent(record: Record<string, unknown>): CreateOmelinkAg
   return {
     agentId,
     name: readString(record, "name"),
-    externalConversationId: readString(record, "omelink_conversation_id"),
+    externalAgentId: readString(record, "omelink_agent_id"),
     model: readString(record, "model"),
     workspace: readString(record, "workspace"),
     agentDir: readString(record, "agent_dir")

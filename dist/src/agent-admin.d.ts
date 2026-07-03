@@ -3,7 +3,7 @@ export type CreateOmelinkAgentParams = {
     configPath?: string;
     agentId: string;
     name?: string;
-    externalConversationId?: string;
+    externalAgentId?: string;
     model?: string;
     workspace?: string;
     agentDir?: string;

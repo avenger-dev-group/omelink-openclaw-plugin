@@ -193,7 +193,7 @@ describe("omelink channel inbound gateway", () => {
     expect(routeHandlers.get("/api/external/omelink/channel/heartbeat")?.auth).toBe("gateway");
 
     const response = await postWebhook("/api/external/omelink/channel/inbound", {
-      omelink_conversation_id: "local-channel-xxx",
+      omelink_agent_id: "local-agent-xxx",
       omelink_message_id: "im-message-001",
       text: "hello"
     });
@@ -206,11 +206,11 @@ describe("omelink channel inbound gateway", () => {
         channel: "omelink",
         channelLabel: "OMELINK",
         accountId: "default",
-        peer: { kind: "direct", id: "local-channel-xxx" },
-        senderId: "local-channel-xxx",
-        senderAddress: "omelink:local-channel-xxx",
-        recipientAddress: "omelink:local-channel-xxx",
-        conversationLabel: "local-channel-xxx",
+        peer: { kind: "direct", id: "local-agent-xxx" },
+        senderId: "local-agent-xxx",
+        senderAddress: "omelink:local-agent-xxx",
+        recipientAddress: "omelink:local-agent-xxx",
+        conversationLabel: "local-agent-xxx",
         rawBody: "hello",
         messageId: "im-message-001"
       })
@@ -295,7 +295,7 @@ describe("omelink channel inbound gateway", () => {
     });
 
     const response = await postWebhook("/api/external/omelink/channel/inbound", {
-      omelink_conversation_id: "local-channel-xxx",
+      omelink_agent_id: "local-agent-xxx",
       omelink_message_id: "im-message-002",
       text: "hello"
     });
@@ -309,7 +309,7 @@ describe("omelink channel inbound gateway", () => {
           "Content-Type": "application/json",
           "x-api-key": "secret-key"
         },
-        body: expect.stringContaining('"omelink_conversation_id":"local-channel-xxx"')
+        body: expect.stringContaining('"omelink_conversation_id":"local-agent-xxx"')
       })
     );
   });
